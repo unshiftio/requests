@@ -1,6 +1,7 @@
 'use strict';
 
 var EventEmitter = require('eventemitter3')
+  , loads = require('loads')
   , AXO = require('axo');
 
 /**
@@ -57,7 +58,17 @@ Requests.prototype.initialize = function initialize(options) {
     this.socket.withCredentials = true;
   }
 
-  this.socket.send(options.body || null);
+  //
+  // We want to prevent pre-flight requests by default for CORS requests so we
+  // need to force the content-type to text/plain.
+  //
+  this.header('Content-Type', 'text/plain');
+  for (var key in options.headers) {
+    this.header(key, options.headers[key]);
+  }
+
+  loads(this.socket, this.emits('data'), this.emits('streaming'));
+  this.socket.send(options.body);
 };
 
 /**
@@ -74,7 +85,10 @@ Requests.prototype.header = function header(key, value) {
   // an null-value and to be consistent with all XHR implementations we're going
   // to cast the value to a string.
   //
-  if (value !== undefined) {
+  // While we don't technically support the XDomainRequest of IE, we do want to
+  // double check that the setRequestHeader is available before adding headers.
+  //
+  if (value !== undefined && this.socket.setRequestHeader) {
     this.socket.setRequestHeader(key, value +'');
   }
 
@@ -91,6 +105,7 @@ Requests.prototype.header = function header(key, value) {
 Requests.prototype.timeout = function timeout(time) {
   this.socket.timeout = +time;
   this.socket.ontimeout = this.emits('timeout');
+
   return this;
 };
 

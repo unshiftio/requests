@@ -37,8 +37,6 @@ function Requests(url, options) {
   if (!(this instanceof Requests)) return new Requests(url, options);
   options = optional(options || {});
 
-  console.log('options', options);
-
   this.offset = 0;
   this.id = Requests.requested++;
   this.streaming = options.streaming;
@@ -69,6 +67,11 @@ Requests.prototype.initialize = function initialize(options) {
   this.on('stream', function stream(data) {
     if (socket.multipart) return this.emit('data', data);
 
+    //
+    // Please note that we need to use a method here that works on both string
+    // as well as ArrayBuffer's as we have no certainty that we're receiving
+    // text.
+    //
     var chunk = data.slice(this.offset);
     this.offset = data.length;
 
@@ -106,7 +109,7 @@ Requests.prototype.initialize = function initialize(options) {
       }
     } else {
       if (Requests.type.mozchunkedarraybuffer) {
-        socket.responseType = 'moz-chuncked-array-buffer';
+        socket.responseType = 'moz-chunked-arraybuffer';
       }
     }
   }
@@ -255,7 +258,7 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
 
     xhr = Requests.XHR();
     xhr.open('get', '/', true);
-    prop = type.replace('-', '');
+    prop = type.replace(/-/g, '');
 
     //
     // We can only set the `responseType` after we've opened the connection or

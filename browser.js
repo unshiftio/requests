@@ -1,37 +1,59 @@
 'use strict';
 
 var EventEmitter = require('eventemitter3')
-  , loads = require('loads')
+  , listeners = require('loads')
   , AXO = require('axo');
+
+/**
+ *
+ * @param {Object} options Optional configuration that needs default properties.
+ * @api private
+ */
+function optional(options) {
+  for (var key in Requests.defaults) {
+    options[key] = key in options ? options[key] : Requests.defaults[key];
+  }
+
+  return options;
+}
 
 /**
  * RequestS(tream).
  *
+ * Options:
+ *
+ * - streaming: Should the request be streaming.
+ * - method: Which HTTP method should be used.
+ * - headers: Additional request headers.
+ * - mode: Enable CORS mode.
+ * - body: The payload for the request.
+ *
  * @constructor
  * @param {String} url The URL we want to request.
- * @param {String} method HTTP method to use.
+ * @param {Object} options Various of request options.
  * @api public
  */
 function Requests(url, options) {
   if (!(this instanceof Requests)) return new Requests(url, options);
-  options = options || {};
+  options = optional(options || {});
+
+  console.log('options', options);
 
   this.offset = 0;
   this.id = Requests.requested++;
-  this.streaming = options.streaming || false;
-  this.socket = Requests[Requests.mode](options);
-  this.socket.open(url, options.method.toUppercase(), true);
+  this.streaming = options.streaming;
+  this.socket = Requests[Requests.method](options);
+  this.socket.open(options.method.toUpperCase(), url, true);
 
   //
   // Register this as an active HTTP request.
   //
   Requests.active[this.id] = this;
-  this.initialize();
+  this.initialize(options);
 }
 
 Requests.prototype = new EventEmitter();
 Requests.prototype.constructor = Requests;
-Requests.prototype.emits = require('emits');
 
 /**
  * Initialize and start requesting the supplied resource.
@@ -40,22 +62,25 @@ Requests.prototype.emits = require('emits');
  * @api private
  */
 Requests.prototype.initialize = function initialize(options) {
-  this.on('stream', function stream() {
-    if (this.socket.multipart) return this.emit('data', this.socket.responseText);
+  var what
+    , requests = this
+    , socket = requests.socket;
 
-    var chunk = this.socket.responseText.slice(this.offset);
-    this.offset = this.socket.responseText.length;
+  this.on('stream', function stream(data) {
+    if (socket.multipart) return this.emit('data', data);
+
+    var chunk = data.slice(this.offset);
+    this.offset = data.length;
 
     this.emit('data', chunk);
   });
 
   if (options.timeout) {
-    this.socket.timeout = +options.time;
-    this.socket.ontimeout = this.emits('timeout');
+    socket.timeout = +options.time;
   }
 
-  if ('cors' === options.mode.toLowerCase() && 'withCredentials' in this.socket) {
-    this.socket.withCredentials = true;
+  if ('cors' === options.mode.toLowerCase() && 'withCredentials' in socket) {
+    socket.withCredentials = true;
   }
 
   //
@@ -63,12 +88,31 @@ Requests.prototype.initialize = function initialize(options) {
   // need to force the content-type to text/plain.
   //
   this.header('Content-Type', 'text/plain');
-  for (var key in options.headers) {
-    this.header(key, options.headers[key]);
+  for (what in options.headers) {
+    this.header(what, options.headers[what]);
   }
 
-  loads(this.socket, this.emits('data'), this.emits('streaming'));
-  this.socket.send(options.body);
+  //
+  // Set the correct responseType method.
+  //
+  if (this.streaming) {
+    if ('string' === typeof options.body) {
+      if ('multipart' in socket) {
+        socket.multipart = true;
+      } else if (Requests.type.mozchunkedtext) {
+        socket.responseType = 'moz-chuncked-text';
+      } else if (Requests.type.msstream) {
+        socket.responseType = 'ms-stream';
+      }
+    } else {
+      if (Requests.type.mozchunkedarraybuffer) {
+        socket.responseType = 'moz-chuncked-array-buffer';
+      }
+    }
+  }
+
+  listeners(socket, this, this.streaming);
+  socket.send(options.body);
 };
 
 /**
@@ -139,28 +183,6 @@ Requests.AXO = function create() {
 };
 
 /**
- * Status codes that might need to be mapped to something more sane.
- *
- * @type {Object}
- * @private
- */
-Requests.status = {
-  //
-  // If you make a request with a file:// protocol it returns status code 0 by
-  // default so we're going to assume 200 instead.
-  //
-  0: 200,
-
-  //
-  // Older version IE incorrectly return status code 1233 for requests that
-  // respond with a 204 header.
-  //
-  // @see http://stackoverflow.com/q/10046972
-  //
-  1233: 204
-};
-
-/**
  * Requests that are currently running.
  *
  * @type {Object}
@@ -190,7 +212,7 @@ Requests.requested = 0;
  * @type {String}
  * @public
  */
-Requests.mode = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
+Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
 
 /**
  * Boolean indicating
@@ -198,7 +220,23 @@ Requests.mode = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
  * @type {Boolean}
  * @public
  */
-Requests.supported = !!Requests.mode;
+Requests.supported = !!Requests.method;
+
+/**
+ * The defaults for the Requests. These values will be used if no options object
+ * or matching key is provided. It can be override globally if needed but this
+ * is not advised as it can have some potential side affects for other libraries
+ * that use this module.
+ *
+ * @type {Object}
+ * @public
+ */
+Requests.defaults = {
+  streaming: false,
+  method: 'GET',
+  mode: 'cors',
+  headers: {},
+};
 
 /**
  * The different type of `responseType` parsers that are supported in this XHR
@@ -207,7 +245,7 @@ Requests.supported = !!Requests.mode;
  * @type {Object}
  * @public
  */
-Requests.type = 'XHR' === Requests.mode ? (function detect() {
+Requests.type = 'XHR' === Requests.method ? (function detect() {
   var types = 'arraybuffer,blob,document,json,text,moz-blob,moz-chunked-text,moz-chunked-arraybuffer,ms-stream'.split(',')
     , supported = {}
     , type, xhr, prop;
@@ -243,7 +281,7 @@ Requests.type = 'XHR' === Requests.mode ? (function detect() {
  * @type {Boolean}
  * @private
  */
-Requests.streaming = 'XHR' === Requests.mode && (
+Requests.streaming = 'XHR' === Requests.method && (
      'multipart' in XMLHttpRequest.prototype
   || Requests.type.mozchunkedarraybuffer
   || Requests.type.mozchunkedtext

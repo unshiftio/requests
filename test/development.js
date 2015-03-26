@@ -29,12 +29,12 @@ require('http').createServer(function statical(req, res) {
     return;
 
     case '/stream':
-      res.write('first \n');
+      res.write('[first chunk]');
       setTimeout(function () {
-        res.write('second \n');
+        res.write('[second chunk]');
 
         setTimeout(function () {
-          res.end('final chunk');
+          res.end('[final chunk]');
         }, 10000);
       }, 100);
     return;
@@ -46,6 +46,11 @@ require('http').createServer(function statical(req, res) {
   }
 
   require('fs').createReadStream(__dirname + req.url).pipe(res);
+}).on('connection', function connection(socket) {
+  //
+  // Force buffer flusing when we call our write.
+  //
+  socket.setNoDelay(true);
 }).listen(+process.argv[2] || 8080, function listening() {
   console.log('Development server is now running on:');
   console.log('');

@@ -1,7 +1,7 @@
 describe('requests', function () {
   'use strict';
 
-  var xhr = require('./browser')
+  var xhr = require('../browser')
     , assume = require('assume');
 
   it('is exported as function', function () {

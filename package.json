@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "100%": "istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
-    "test": "mocha test.js",
-    "watch": "mocha --watch test.js",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test.js",
-    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test.js",
-    "compile": "mkdir -p dist && browserify browser.js -o dist/requests.js --standalone Requests"
+    "test": "mocha test/test.js",
+    "watch": "mocha --watch test/test.js",
+    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/test.js",
+    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/test.js",
+    "compile": "mkdir -p dist && browserify browser.js -o dist/requests.js --standalone Requests",
+    "start": "node test/development.js"
   },
   "repository": {
     "type": "git",

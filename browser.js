@@ -103,7 +103,7 @@ Requests.prototype.initialize = function initialize(options) {
       if ('multipart' in socket) {
         socket.multipart = true;
       } else if (Requests.type.mozchunkedtext) {
-        socket.responseType = 'moz-chuncked-text';
+        socket.responseType = 'moz-chunked-text';
       } else if (Requests.type.msstream) {
         socket.responseType = 'ms-stream';
       }

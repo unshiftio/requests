@@ -5,6 +5,7 @@ var EventEmitter = require('eventemitter3')
   , AXO = require('axo');
 
 /**
+ * Optionally get a configuration value somewhere.
  *
  * @param {Object} options Optional configuration that needs default properties.
  * @api private
@@ -42,6 +43,13 @@ function Requests(url, options) {
   this.streaming = options.streaming;
   this.socket = Requests[Requests.method](options);
   this.socket.open(options.method.toUpperCase(), url, true);
+
+  //
+  // We want to implement a stream like interface on top of this module so it
+  // can be used to read streaming data in node as well as through browserify.
+  //
+  this.readable = true;
+  this.writable = false;
 
   //
   // Register this as an active HTTP request.

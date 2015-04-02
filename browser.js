@@ -151,20 +151,6 @@ Requests.prototype.header = function header(key, value) {
 };
 
 /**
- * Register a timeout handler.
- *
- * @param {Number} time Maximum duration a request can take.
- * @returns {Requests}
- * @api public
- */
-Requests.prototype.timeout = function timeout(time) {
-  this.socket.timeout = +time;
-  this.socket.ontimeout = this.emits('timeout');
-
-  return this;
-};
-
-/**
  * Create a new XMLHttpRequest.
  *
  * @returns {XMLHttpRequest}

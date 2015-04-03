@@ -86,6 +86,10 @@ Requests.prototype.initialize = function initialize(options) {
     this.emit('data', chunk);
   });
 
+  this.on('end', function cleanup() {
+    delete Requests.active[this.id];
+  });
+
   if (options.timeout) {
     socket.timeout = +options.time;
   }
@@ -148,6 +152,26 @@ Requests.prototype.header = function header(key, value) {
   }
 
   return this;
+};
+
+/**
+ * Completely destroy the running XHR and release of the internal references.
+ *
+ * @returns {Boolean} Successful destruction
+ * @api public
+ */
+Requests.prototype.destroy = function destroy() {
+  if (!this.socket) return false;
+
+  this.emit('destroy');
+
+  this.socket.abort();
+  this.removeAllListeners();
+
+  this.socket = null;
+  delete Requests.active[this.id];
+
+  return true;
 };
 
 /**

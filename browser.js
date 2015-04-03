@@ -311,6 +311,18 @@ Requests.streaming = 'XHR' === Requests.method && (
 );
 
 //
+// IE has a bug which causes IE10 to freeze when close WebPage during an XHR
+// request: https://support.microsoft.com/kb/2856746
+//
+// The solution is to completely clean up all active running requests.
+//
+if (global.attachEvent) global.attachEvent('onunload', function reap() {
+  for (var id in Requests.active) {
+    Requests.active[id].destroy();
+  }
+});
+
+//
 // Expose the Requests library.
 //
 module.exports = Requests;

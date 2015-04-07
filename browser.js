@@ -55,7 +55,7 @@ function Requests(url, options) {
   // Register this as an active HTTP request.
   //
   Requests.active[this.id] = this;
-  this.initialize(options);
+  if (!options.manual) this.open(options);
 }
 
 Requests.prototype = new EventEmitter();
@@ -67,7 +67,7 @@ Requests.prototype.constructor = Requests;
  * @param {Object} options Passed in defaults.
  * @api private
  */
-Requests.prototype.initialize = function initialize(options) {
+Requests.prototype.open = function open(options) {
   var what
     , requests = this
     , socket = requests.socket;
@@ -127,6 +127,8 @@ Requests.prototype.initialize = function initialize(options) {
   }
 
   listeners(socket, this, this.streaming);
+  this.emit('before', socket);
+
   socket.send(options.body);
 };
 
@@ -254,6 +256,7 @@ Requests.supported = !!Requests.method;
  */
 Requests.defaults = {
   streaming: false,
+  manual: false,
   method: 'GET',
   mode: 'cors',
   headers: {},

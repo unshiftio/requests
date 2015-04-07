@@ -35,7 +35,9 @@
   "dependencies": {
     "axo": "0.0.x",
     "eventemitter3": "0.1.x",
-    "loads": "0.0.x"
+    "hang": "1.0.x",
+    "loads": "0.0.x",
+    "xhr-send": "1.0.x"
   },
   "devDependencies": {
     "assume": "1.2.x",

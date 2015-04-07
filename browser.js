@@ -2,6 +2,8 @@
 
 var EventEmitter = require('eventemitter3')
   , listeners = require('loads')
+  , send = require('xhr-send')
+  , hang = require('hang')
   , AXO = require('axo');
 
 /**
@@ -72,22 +74,22 @@ Requests.prototype.open = function open(options) {
     , requests = this
     , socket = requests.socket;
 
-  this.on('stream', function stream(data) {
-    if (socket.multipart) return this.emit('data', data);
+  requests.on('stream', function stream(data) {
+    if (socket.multipart) return requests.emit('data', data);
 
     //
     // Please note that we need to use a method here that works on both string
     // as well as ArrayBuffer's as we have no certainty that we're receiving
     // text.
     //
-    var chunk = data.slice(this.offset);
-    this.offset = data.length;
+    var chunk = data.slice(requests.offset);
+    requests.offset = data.length;
 
-    this.emit('data', chunk);
+    requests.emit('data', chunk);
   });
 
-  this.on('end', function cleanup() {
-    delete Requests.active[this.id];
+  requests.on('end', function cleanup() {
+    delete Requests.active[requests.id];
   });
 
   if (options.timeout) {
@@ -102,15 +104,15 @@ Requests.prototype.open = function open(options) {
   // We want to prevent pre-flight requests by default for CORS requests so we
   // need to force the content-type to text/plain.
   //
-  this.header('Content-Type', 'text/plain');
+  requests.header('Content-Type', 'text/plain');
   for (what in options.headers) {
-    this.header(what, options.headers[what]);
+    requests.header(what, options.headers[what]);
   }
 
   //
   // Set the correct responseType method.
   //
-  if (this.streaming) {
+  if (requests.streaming) {
     if ('string' === typeof options.body) {
       if ('multipart' in socket) {
         socket.multipart = true;
@@ -126,10 +128,17 @@ Requests.prototype.open = function open(options) {
     }
   }
 
-  listeners(socket, this, this.streaming);
-  this.emit('before', socket);
+  listeners(socket, requests, requests.streaming);
+  requests.emit('before', socket);
 
-  socket.send(options.body);
+  send(socket, options.body, hang(function send(err) {
+    if (err) {
+      requests.emit('error', err);
+      requests.emit('end', err);
+    }
+
+    requests.emit('send');
+  }));
 };
 
 /**

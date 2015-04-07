@@ -79,6 +79,7 @@ The following events are emitted:
 - `end` Done with requesting the URL. An error argument can be supplied if the
   connection was closed due to an error.
 - `before` Emitted before we send the actual request.
+- `send` Emitted after we've succesfully started the sending of the data.
 
 ### requests#destroy
 

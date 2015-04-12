@@ -41,7 +41,7 @@ function Requests(url, options) {
   options = optional(options || {});
 
   this.offset = 0;
-  this.id = Requests.requested++;
+  this.id = ++Requests.requested;
   this.streaming = options.streaming;
   this.socket = Requests[Requests.method](options);
   this.socket.open(options.method.toUpperCase(), url, true);

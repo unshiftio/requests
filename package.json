@@ -6,7 +6,8 @@
   "browser": "browser.js",
   "scripts": {
     "100%": "istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
-    "test": "mocha test/test.js",
+    "test": "mochify --ui bdd --reporter spec ./test/requests.browser.js",
+    "node": "mocha test/requests.test.js",
     "watch": "mocha --watch test/test.js",
     "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/test.js",
     "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/test.js",
@@ -44,6 +45,7 @@
     "browserify": "8.x.x",
     "istanbul": "0.3.x",
     "mocha": "2.2.x",
+    "mochify": "2.7.x",
     "pre-commit": "1.0.x"
   }
 }

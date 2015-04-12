@@ -8,9 +8,10 @@
     "100%": "istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
     "test": "mochify --ui bdd --reporter spec ./test/requests.browser.js",
     "node": "mocha test/requests.test.js",
-    "watch": "mocha --watch test/test.js",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/test.js",
-    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/test.js",
+    "watch": "mocha --watch ./test/requests.test.js",
+    "all": "npm run test && npm run node",
+    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/requests.test.js",
+    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/requests.test.js",
     "compile": "mkdir -p dist && browserify browser.js -o dist/requests.js --standalone Requests",
     "start": "node test/development.js"
   },

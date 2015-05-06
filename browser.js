@@ -121,7 +121,7 @@ Requests.prototype.open = function open(options) {
   // Set the correct responseType method.
   //
   if (requests.streaming) {
-    if ('string' === typeof options.body) {
+    if (!options.body || 'string' === typeof options.body) {
       if ('multipart' in socket) {
         socket.multipart = true;
       } else if (Requests.type.mozchunkedtext) {

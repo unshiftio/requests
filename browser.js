@@ -44,6 +44,14 @@ function Requests(url, options) {
   this.id = ++Requests.requested;
   this.streaming = options.streaming;
   this.socket = Requests[Requests.method](options);
+
+  //
+  // Open the socket BEFORE adding any properties to the instance as this might
+  // trigger a thrown `InvalidStateError: An attempt was made to use an object
+  // that is not, or is no longer, usable` error in FireFox:
+  //
+  // @see https://bugzilla.mozilla.org/show_bug.cgi?id=707484
+  //
   this.socket.open(options.method.toUpperCase(), url, true);
 
   //

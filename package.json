@@ -6,7 +6,8 @@
   "browser": "browser.js",
   "scripts": {
     "100%": "istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
-    "test": "mochify --ui bdd --reporter spec ./test/requests.browser.js",
+    "test": "node test/index.js",
+    "static": "node test/static.js",
     "node": "mocha test/requests.test.js",
     "watch": "mocha --watch ./test/requests.test.js",
     "all": "npm run test && npm run node",
@@ -43,10 +44,25 @@
   },
   "devDependencies": {
     "assume": "1.2.x",
+    "async-each": "0.1.x",
     "browserify": "8.x.x",
     "istanbul": "0.3.x",
     "mocha": "2.2.x",
     "mochify": "2.7.x",
     "pre-commit": "1.0.x"
+  },
+  "testling": {
+    "files": "test/*.browser.js",
+    "harness": "mocha-bdd",
+    "browsers": [
+      "ie/6..latest",
+      "chrome/22..latest",
+      "firefox/16..latest",
+      "safari/latest",
+      "opera/11.0..latest",
+      "iphone/latest",
+      "ipad/latest",
+      "android-browser/latest"
+    ]
   }
 }

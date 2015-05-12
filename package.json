@@ -38,6 +38,7 @@
   "dependencies": {
     "axo": "0.0.x",
     "eventemitter3": "0.1.x",
+    "extendible": "0.1.x",
     "hang": "1.0.x",
     "loads": "0.0.x",
     "xhr-send": "1.0.x"
@@ -46,7 +47,6 @@
     "assume": "1.2.x",
     "async-each": "0.1.x",
     "browserify": "8.x.x",
-    "extendible": "0.1.1",
     "istanbul": "0.3.x",
     "mocha": "2.2.x",
     "mochify": "2.7.x",

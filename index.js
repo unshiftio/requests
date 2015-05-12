@@ -1,10 +1,15 @@
 'use strict';
 
-var https = require('https')
+var Requested = require('./requested')
+  , https = require('https')
   , http = require('http');
 
-function Requests() {
+module.exports = Requested.extend({
+  initialize: function initialize() {
 
-}
+  },
 
-module.exports = Requests;
+  open: function open() {
+
+  }
+});

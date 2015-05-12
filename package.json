@@ -46,6 +46,7 @@
     "assume": "1.2.x",
     "async-each": "0.1.x",
     "browserify": "8.x.x",
+    "extendible": "0.1.1",
     "istanbul": "0.3.x",
     "mocha": "2.2.x",
     "mochify": "2.7.x",

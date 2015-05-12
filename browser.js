@@ -1,24 +1,10 @@
 'use strict';
 
-var EventEmitter = require('eventemitter3')
+var Requested = require('./requested')
   , listeners = require('loads')
   , send = require('xhr-send')
   , hang = require('hang')
   , AXO = require('axo');
-
-/**
- * Optionally get a configuration value somewhere.
- *
- * @param {Object} options Optional configuration that needs default properties.
- * @api private
- */
-function optional(options) {
-  for (var key in Requests.defaults) {
-    options[key] = key in options ? options[key] : Requests.defaults[key];
-  }
-
-  return options;
-}
 
 /**
  * RequestS(tream).
@@ -36,162 +22,157 @@ function optional(options) {
  * @param {Object} options Various of request options.
  * @api public
  */
-function Requests(url, options) {
-  if (!(this instanceof Requests)) return new Requests(url, options);
-  options = optional(options || {});
+var Requests = module.exports = Requested.extend({
+  constructor: function bobthebuilder(url, options) {
+    if (!(this instanceof Requests)) return new Requests(url, options);
 
-  this.offset = 0;
-  this.id = ++Requests.requested;
-  this.streaming = options.streaming;
-  this.socket = Requests[Requests.method](options);
+    Requested.apply(this, arguments);
+  },
 
-  //
-  // Open the socket BEFORE adding any properties to the instance as this might
-  // trigger a thrown `InvalidStateError: An attempt was made to use an object
-  // that is not, or is no longer, usable` error in FireFox:
-  //
-  // @see https://bugzilla.mozilla.org/show_bug.cgi?id=707484
-  //
-  this.socket.open(options.method.toUpperCase(), url, true);
+  /**
+   * The offset of data that we've already previously read
+   *
+   * @type {Number}
+   * @private
+   */
+  offset: 0,
 
-  //
-  // We want to implement a stream like interface on top of this module so it
-  // can be used to read streaming data in node as well as through browserify.
-  //
-  this.readable = true;
-  this.writable = false;
-
-  //
-  // Register this as an active HTTP request.
-  //
-  Requests.active[this.id] = this;
-  if (!options.manual) this.open(options);
-}
-
-Requests.prototype = new EventEmitter();
-Requests.prototype.constructor = Requests;
-
-/**
- * Initialize and start requesting the supplied resource.
- *
- * @param {Object} options Passed in defaults.
- * @api private
- */
-Requests.prototype.open = function open(options) {
-  var what
-    , requests = this
-    , socket = requests.socket;
-
-  requests.on('stream', function stream(data) {
-    if (socket.multipart) return requests.emit('data', data);
+  /**
+   * The requests instance has been fully initialized.
+   *
+   * @param {String} url The URL we need to connect to.
+   * @api private
+   */
+  initialize: function initialize(url) {
+    this.socket = Requests[Requests.method](this);
 
     //
-    // Please note that we need to use a method here that works on both string
-    // as well as ArrayBuffer's as we have no certainty that we're receiving
-    // text.
+    // Open the socket BEFORE adding any properties to the instance as this might
+    // trigger a thrown `InvalidStateError: An attempt was made to use an object
+    // that is not, or is no longer, usable` error in FireFox:
     //
-    var chunk = data.slice(requests.offset);
-    requests.offset = data.length;
+    // @see https://bugzilla.mozilla.org/show_bug.cgi?id=707484
+    //
+    this.socket.open(this.method.toUpperCase(), url, true);
 
-    requests.emit('data', chunk);
-  });
+    //
+    // Register this as an active HTTP request.
+    //
+    Requests.active[this.id] = this;
+  },
 
-  requests.on('end', function cleanup() {
-    delete Requests.active[requests.id];
-  });
+  /**
+   * Initialize and start requesting the supplied resource.
+   *
+   * @param {Object} options Passed in defaults.
+   * @api private
+   */
+  open: function open() {
+    var what
+      , requests = this
+      , socket = requests.socket;
 
-  if (options.timeout) {
-    socket.timeout = +options.time;
-  }
+    requests.on('stream', function stream(data) {
+      if (socket.multipart) return requests.emit('data', data);
 
-  if ('cors' === options.mode.toLowerCase() && 'withCredentials' in socket) {
-    socket.withCredentials = true;
-  }
+      //
+      // Please note that we need to use a method here that works on both string
+      // as well as ArrayBuffer's as we have no certainty that we're receiving
+      // text.
+      //
+      var chunk = data.slice(requests.offset);
+      requests.offset = data.length;
 
-  //
-  // We want to prevent pre-flight requests by default for CORS requests so we
-  // need to force the content-type to text/plain.
-  //
-  requests.header('Content-Type', 'text/plain');
-  for (what in options.headers) {
-    requests.header(what, options.headers[what]);
-  }
+      requests.emit('data', chunk);
+    });
 
-  //
-  // Set the correct responseType method.
-  //
-  if (requests.streaming) {
-    if (!options.body || 'string' === typeof options.body) {
-      if ('multipart' in socket) {
-        socket.multipart = true;
-      } else if (Requests.type.mozchunkedtext) {
-        socket.responseType = 'moz-chunked-text';
-      } else if (Requests.type.msstream) {
-        socket.responseType = 'ms-stream';
-      }
-    } else {
-      if (Requests.type.mozchunkedarraybuffer) {
-        socket.responseType = 'moz-chunked-arraybuffer';
-      }
-    }
-  }
+    requests.on('end', function cleanup() {
+      delete Requests.active[requests.id];
+    });
 
-  listeners(socket, requests, requests.streaming);
-  requests.emit('before', socket);
-
-  send(socket, options.body, hang(function send(err) {
-    if (err) {
-      requests.emit('error', err);
-      requests.emit('end', err);
+    if (this.timeout) {
+      socket.timeout = +this.timeout;
     }
 
-    requests.emit('send');
-  }));
-};
+    if ('cors' === this.mode.toLowerCase() && 'withCredentials' in socket) {
+      socket.withCredentials = true;
+    }
 
-/**
- * Safely set a request header.
- *
- * @param {String} key Name of the header.
- * @param {String} value Value of the header.
- * @returns {Requests}
- * @api public
- */
-Requests.prototype.header = function header(key, value) {
-  //
-  // ActiveXObject will throw an `Type Mismatch` exception when setting the to
-  // an null-value and to be consistent with all XHR implementations we're going
-  // to cast the value to a string.
-  //
-  // While we don't technically support the XDomainRequest of IE, we do want to
-  // double check that the setRequestHeader is available before adding headers.
-  //
-  if (value !== undefined && this.socket.setRequestHeader) {
-    this.socket.setRequestHeader(key, value +'');
+    //
+    // ActiveXObject will throw an `Type Mismatch` exception when setting the to
+    // an null-value and to be consistent with all XHR implementations we're going
+    // to cast the value to a string.
+    //
+    // While we don't technically support the XDomainRequest of IE, we do want to
+    // double check that the setRequestHeader is available before adding headers.
+    //
+    // Chrome has a bug where it will actually append values to the header instead
+    // of overriding it. So if you do a double setRequestHeader(Content-Type) with
+    // text/plain and with text/plain again, it will end up as `text/plain,
+    // text/plain` as header value. This is why use a headers object as it
+    // already eliminates duplicate headers.
+    //
+    for (what in this.headers) {
+      if (this.headers[what] !== undefined && this.socket.setRequestHeader) {
+        this.socket.setRequestHeader(what, this.headers[what] +'');
+      }
+    }
+
+    //
+    // Set the correct responseType method.
+    //
+    if (requests.streaming) {
+      if (!this.body || 'string' === typeof this.body) {
+        if ('multipart' in socket) {
+          socket.multipart = true;
+        } else if (Requests.type.mozchunkedtext) {
+          socket.responseType = 'moz-chunked-text';
+        } else if (Requests.type.msstream) {
+          socket.responseType = 'ms-stream';
+        }
+      } else {
+        if (Requests.type.mozchunkedarraybuffer) {
+          socket.responseType = 'moz-chunked-arraybuffer';
+        }
+      }
+    }
+
+    listeners(socket, requests, requests.streaming);
+    requests.emit('before', socket);
+
+    send(socket, this.body, hang(function send(err) {
+      if (err) {
+        requests.emit('error', err);
+        requests.emit('end', err);
+      }
+
+      requests.emit('send');
+    }));
+  },
+
+  /**
+   * Completely destroy the running XHR and release of the internal references.
+   *
+   * @returns {Boolean} Successful destruction
+   * @api public
+   */
+  destroy: function destroy() {
+    if (!this.socket) return false;
+
+    this.emit('destroy');
+
+    this.socket.abort();
+    this.removeAllListeners();
+
+    this.headers = {};
+    this.socket = null;
+    this.body = null;
+
+    delete Requests.active[this.id];
+
+    return true;
   }
-
-  return this;
-};
-
-/**
- * Completely destroy the running XHR and release of the internal references.
- *
- * @returns {Boolean} Successful destruction
- * @api public
- */
-Requests.prototype.destroy = function destroy() {
-  if (!this.socket) return false;
-
-  this.emit('destroy');
-
-  this.socket.abort();
-  this.removeAllListeners();
-
-  this.socket = null;
-  delete Requests.active[this.id];
-
-  return true;
-};
+});
 
 /**
  * Create a new XMLHttpRequest.
@@ -231,15 +212,6 @@ Requests.AXO = function create() {
 Requests.active = {};
 
 /**
- * Unique id and also an indication on how many XHR requests we've made using
- * this library.
- *
- * @type {Number}
- * @private
- */
-Requests.requested = 0;
-
-/**
  * The type of technology we are using to establish a working Ajax connection.
  * This can either be:
  *
@@ -261,23 +233,6 @@ Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
  * @public
  */
 Requests.supported = !!Requests.method;
-
-/**
- * The defaults for the Requests. These values will be used if no options object
- * or matching key is provided. It can be override globally if needed but this
- * is not advised as it can have some potential side affects for other libraries
- * that use this module.
- *
- * @type {Object}
- * @public
- */
-Requests.defaults = {
-  streaming: false,
-  manual: false,
-  method: 'GET',
-  mode: 'cors',
-  headers: {},
-};
 
 /**
  * The different type of `responseType` parsers that are supported in this XHR

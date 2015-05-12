@@ -1,6 +1,12 @@
 describe('requests', function () {
   'use strict';
 
+  //
+  // Include the Base class that we inherit from to ensure that it's also
+  // included in the test run as it should run on both browsers and node.js
+  //
+  require('./requested');
+
   var requests = require('../browser')
     , assume = require('assume')
     , req;

@@ -127,12 +127,12 @@ var Requests = module.exports = Requested.extend({
           socket.multipart = true;
         } else if (Requests.type.mozchunkedtext) {
           socket.responseType = 'moz-chunked-text';
-        } else if (Requests.type.msstream) {
-          socket.responseType = 'ms-stream';
         }
       } else {
         if (Requests.type.mozchunkedarraybuffer) {
           socket.responseType = 'moz-chunked-arraybuffer';
+        } else if (Requests.type.msstream) {
+          socket.responseType = 'ms-stream';
         }
       }
     }

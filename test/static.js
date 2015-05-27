@@ -4,6 +4,7 @@ var fs = require('fs')
   , url = require('url')
   , path = require('path')
   , http = require('http')
+  , setHeader = require('setheader')
   , httpProxy = require('http-proxy');
 
 module.exports = function staticserver(kill, next) {
@@ -12,10 +13,11 @@ module.exports = function staticserver(kill, next) {
   var server = http.createServer(function serve(req, res) {
     var file = path.join(__dirname, url.parse(req.url).pathname);
 
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    setHeader(res, 'Access-Control-Allow-Origin', req.headers.origin || 'http://localhost');
+    setHeader(res, 'Access-Control-Allow-Credentials', 'true');
 
     if (!fs.existsSync(file)) {
+      req.headers.host = '';
       return proxy.web(req, res, { target: 'https://raw.githubusercontent.com' });
     }
 

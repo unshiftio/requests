@@ -52,7 +52,8 @@
     "istanbul": "0.3.x",
     "mocha": "2.2.x",
     "mochify": "2.7.x",
-    "pre-commit": "1.0.x"
+    "pre-commit": "1.0.x",
+    "setheader": "0.0.x"
   },
   "testling": {
     "files": "test/*.browser.js",

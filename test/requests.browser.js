@@ -46,9 +46,12 @@ describe('requests', function () {
   });
 
   it('can handle large files with streaming', function (done) {
-    req = requests('http://apps.ui.godaddy.com/extern.min.js', { streaming: true });
+    req = requests('http://localhost:8080/unshiftio/requests/large/test/large.js', {
+      streaming: true
+    });
 
     var buffer = [];
+
     req.on('data', function received(chunk) {
       buffer.push(chunk);
     });
@@ -57,9 +60,10 @@ describe('requests', function () {
 
     req.once('end', function end(err, status) {
       assume(buffer.length).to.be.above(1);
-      // assume(buffer.join('').length).equals(117613);
+      assume(buffer.join('').length).equals(117613);
       assume(status.code).to.equal(200);
       assume(status.text).to.equal('OK');
+
       buffer = null;
       done();
     });

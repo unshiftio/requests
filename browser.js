@@ -166,7 +166,7 @@ var Requests = module.exports = Requested.extend({
 
     this.emit('destroy');
 
-    setTimeout(this.socket.abort.bind(this.socket), 0);
+    this.socket.abort();
     this.removeAllListeners();
 
     this.headers = {};

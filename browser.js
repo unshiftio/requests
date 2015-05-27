@@ -90,9 +90,7 @@ var Requests = module.exports = Requested.extend({
     });
 
     requests.on('end', function cleanup() {
-      setTimeout(function wait() {
-        delete Requests.active[requests.id];
-      }, 0);
+      delete Requests.active[requests.id];
     });
 
     if (this.timeout) {

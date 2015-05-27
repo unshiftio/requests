@@ -58,7 +58,7 @@ kill.hooks = [];
   function phantomjs(kill, next) {
     mochify('./test/*.browser.js', {
       reporter: 'spec',
-      cover: true,
+      cover: !wd,
       ui: 'bdd',
       wd: wd
     })

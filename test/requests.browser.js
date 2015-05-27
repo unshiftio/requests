@@ -59,6 +59,7 @@ describe('requests', function () {
       assume(buffer.join('').length).equals(117613);
       assume(status.code).to.equal(200);
       assume(status.text).to.equal('OK');
+      buffer = null;
       done();
     });
   });

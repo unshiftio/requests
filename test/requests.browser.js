@@ -7,7 +7,8 @@ describe('requests', function () {
   //
   require('./requested');
 
-  var requests = require('../browser')
+  var Requested = require('../requested')
+    , requests = require('../browser')
     , assume = require('assume')
     , req;
 
@@ -26,13 +27,13 @@ describe('requests', function () {
   it('increments the internal `.id` for each instance', function () {
     var id = req.id;
 
-    assume(id).equals(requests.requested);
+    assume(id).equals(Requested.requested);
 
     req.destroy();
     req = requests('http://localhost:8080', { manual: true });
 
     assume(req.id).is.above(id);
-    assume(requests.requested).is.above(id);
+    assume(Requested.requested).is.above(id);
   });
 
   it('sets the stream\'s booleans', function () {
@@ -55,7 +56,7 @@ describe('requests', function () {
     req.on('error', done);
 
     req.once('end', function end(err, status) {
-      assume(buffer.length).to.be.above(1);
+      // assume(buffer.length).to.be.above(1);
       assume(buffer.join('').length).equals(117613);
       assume(status.code).to.equal(200);
       assume(status.text).to.equal('OK');

@@ -13,12 +13,23 @@ describe('requests', function () {
     , req;
 
   beforeEach(function () {
-    req = requests('http://localhost:8080', { manual: true });
+    req = requests(unique('http://localhost:8080'), { manual: true });
   });
 
   afterEach(function () {
     req.destroy();
   });
+
+  /**
+   * Make a URL unique so we can bust the browser cache which could affect
+   *
+   * @param {String} url Transform to an URL.
+   * @returns {String}
+   * @api private
+   */
+  function unique(url) {
+    return url + '?t='+ (+ new Date());
+  }
 
   it('is exported as function', function () {
     assume(requests).is.a('function');
@@ -30,7 +41,7 @@ describe('requests', function () {
     assume(id).equals(Requested.requested);
 
     req.destroy();
-    req = requests('http://localhost:8080', { manual: true });
+    req = requests(unique('http://localhost:8080'), { manual: true });
 
     assume(req.id).is.above(id);
     assume(Requested.requested).is.above(id);
@@ -46,7 +57,7 @@ describe('requests', function () {
   });
 
   it('can handle large files with streaming', function (done) {
-    req = requests('http://localhost:8080/unshiftio/requests/large/test/large.js', {
+    req = requests(unique('http://localhost:8080/unshiftio/requests/large/test/large.js'), {
       streaming: true
     });
 

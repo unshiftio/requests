@@ -3,9 +3,12 @@
 var fs = require('fs')
   , url = require('url')
   , path = require('path')
-  , http = require('http');
+  , http = require('http')
+  , httpProxy = require('http-proxy');
 
 module.exports = function staticserver(kill, next) {
+  var proxy = httpProxy.createProxyServer({});
+
   var server = http.createServer(function serve(req, res) {
     var file = path.join(__dirname, url.parse(req.url).pathname);
 
@@ -13,8 +16,7 @@ module.exports = function staticserver(kill, next) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     if (!fs.existsSync(file)) {
-      res.statusCode = 404;
-      return res.end('nope');
+      return proxy.web(req, res, { target: 'https://raw.githubusercontent.com' });
     }
 
     res.statusCode = 200;
@@ -23,6 +25,7 @@ module.exports = function staticserver(kill, next) {
 
   kill(function close(next) {
     server.close(next);
+    proxy.close();
   });
 
   server.listen(8080, next);

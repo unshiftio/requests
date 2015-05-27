@@ -73,7 +73,9 @@ var Requests = module.exports = Requested.extend({
       , socket = requests.socket;
 
     requests.on('stream', function stream(data) {
-      if (socket.multipart) return requests.emit('data', data);
+      if (socket.multipart || Requests.type.mozchunkedtext) {
+        return requests.emit('data', data);
+      }
 
       //
       // Please note that we need to use a method here that works on both string

@@ -44,6 +44,25 @@ describe('requests', function () {
     assume(requests.active[req.id]).equals(req);
   });
 
+  it('can handle large files with streaming', function (done) {
+    req = requests('http://localhost:8080/large.js', { streaming: true });
+
+    var buffer = [];
+    req.on('data', function received(chunk) {
+      buffer.push(chunk);
+    });
+
+    req.on('error', done);
+
+    req.once('end', function end(err, status) {
+      assume(buffer.length).to.be.above(1);
+      assume(buffer.join('').length).equals(117613);
+      assume(status.code).to.equal(200);
+      assume(status.text).to.equal('OK');
+      done();
+    });
+  });
+
   describe('#destroy', function () {
     it('removes the .active instance', function () {
       assume(requests.active[req.id]).equals(req);

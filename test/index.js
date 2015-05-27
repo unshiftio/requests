@@ -1,7 +1,8 @@
 'use strict';
 
 var Mocha = require('mocha')
-  , mochify = require('mochify');
+  , mochify = require('mochify')
+  , wd = process.argv[2] === '--wd';
 
 /**
  * Poor mans kill switch. Kills all active hooks.
@@ -58,7 +59,8 @@ kill.hooks = [];
     mochify('./test/*.browser.js', {
       reporter: 'spec',
       cover: true,
-      ui: 'bdd'
+      ui: 'bdd',
+      wd: wd
     })
     .bundle(next);
   }

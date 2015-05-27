@@ -13,7 +13,7 @@ module.exports = function staticserver(kill, next) {
   var server = http.createServer(function serve(req, res) {
     var file = path.join(__dirname, url.parse(req.url).pathname);
 
-    setHeader(res, 'Access-Control-Allow-Origin', req.headers.origin);
+    setHeader(res, 'Access-Control-Allow-Origin', req.headers.origin || '*');
     setHeader(res, 'Access-Control-Allow-Credentials', 'true');
 
     if (!fs.existsSync(file)) {

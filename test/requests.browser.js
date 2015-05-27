@@ -71,7 +71,7 @@ describe('requests', function () {
 
     req.once('end', function end(err, status) {
       assume(buffer.length).to.be.above(1);
-      assume(buffer.join('').length).equals(354117);
+      assume(buffer.join('').length).equals(1063629);
       assume(status.code).to.equal(200);
       assume(status.text).to.equal('OK');
 

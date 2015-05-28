@@ -1,7 +1,7 @@
 {
   "name": "requests",
-  "version": "0.1.5",
-  "description": "An XHR abstraction that works in browsers and node.js",
+  "version": "0.1.6",
+  "description": "An streaming XHR abstraction that works in browsers and node.js",
   "main": "index.js",
   "browser": "browser.js",
   "scripts": {

@@ -7,17 +7,29 @@ describe('requests', function () {
   //
   require('./requested');
 
-  var requests = require('../browser')
+  var Requested = require('../requested')
+    , requests = require('../browser')
     , assume = require('assume')
     , req;
 
   beforeEach(function () {
-    req = requests('http://localhost:8080', { manual: true });
+    req = requests(unique('http://localhost:8080'), { manual: true });
   });
 
   afterEach(function () {
     req.destroy();
   });
+
+  /**
+   * Make a URL unique so we can bust the browser cache which could affect
+   *
+   * @param {String} url Transform to an URL.
+   * @returns {String}
+   * @api private
+   */
+  function unique(url) {
+    return url + '?t='+ (+ new Date());
+  }
 
   it('is exported as function', function () {
     assume(requests).is.a('function');
@@ -26,13 +38,13 @@ describe('requests', function () {
   it('increments the internal `.id` for each instance', function () {
     var id = req.id;
 
-    assume(id).equals(requests.requested);
+    assume(id).equals(Requested.requested);
 
     req.destroy();
-    req = requests('http://localhost:8080', { manual: true });
+    req = requests(unique('http://localhost:8080'), { manual: true });
 
     assume(req.id).is.above(id);
-    assume(requests.requested).is.above(id);
+    assume(Requested.requested).is.above(id);
   });
 
   it('sets the stream\'s booleans', function () {
@@ -42,6 +54,32 @@ describe('requests', function () {
 
   it('stores active requests', function () {
     assume(requests.active[req.id]).equals(req);
+  });
+
+  it('can handle large files with streaming', function (done) {
+    this.timeout(3E4);
+
+    req = requests(unique('http://localhost:8080/unshiftio/requests/large/test/large.js'), {
+      streaming: true
+    });
+
+    var buffer = [];
+
+    req.on('data', function received(chunk) {
+      buffer.push(chunk);
+    });
+
+    req.on('error', done);
+
+    req.once('end', function end(err, status) {
+      assume(buffer.length).to.be.above(1);
+      assume(buffer.join('').length).equals(2127897);
+      assume(status.code).to.equal(200);
+      assume(status.text).to.equal('OK');
+
+      buffer = null;
+      done();
+    });
   });
 
   describe('#destroy', function () {

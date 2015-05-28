@@ -69,11 +69,14 @@ var Requests = module.exports = Requested.extend({
    */
   open: function open() {
     var what
+      , slice = true
       , requests = this
       , socket = requests.socket;
 
     requests.on('stream', function stream(data) {
-      if (socket.multipart) return requests.emit('data', data);
+      if (!slice) {
+        return requests.emit('data', data);
+      }
 
       //
       // Please note that we need to use a method here that works on both string
@@ -125,8 +128,10 @@ var Requests = module.exports = Requested.extend({
       if (!this.body || 'string' === typeof this.body) {
         if ('multipart' in socket) {
           socket.multipart = true;
+          slice = false;
         } else if (Requests.type.mozchunkedtext) {
           socket.responseType = 'moz-chunked-text';
+          slice = false;
         }
       } else {
         if (Requests.type.mozchunkedarraybuffer) {

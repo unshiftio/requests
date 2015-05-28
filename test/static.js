@@ -3,18 +3,23 @@
 var fs = require('fs')
   , url = require('url')
   , path = require('path')
-  , http = require('http');
+  , http = require('http')
+  , setHeader = require('setheader')
+  , httpProxy = require('http-proxy');
 
 module.exports = function staticserver(kill, next) {
+  var proxy = httpProxy.createProxyServer({});
+
   var server = http.createServer(function serve(req, res) {
     var file = path.join(__dirname, url.parse(req.url).pathname);
 
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    setHeader(res, 'Access-Control-Allow-Origin', req.headers.origin || '*');
+    setHeader(res, 'Access-Control-Allow-Credentials', 'true');
 
     if (!fs.existsSync(file)) {
-      res.statusCode = 404;
-      return res.end('nope');
+      req.headers.host = '';
+      setHeader(res, 'Content-Security-Policy', 'removed');
+      return proxy.web(req, res, { target: 'https://raw.githubusercontent.com' });
     }
 
     res.statusCode = 200;
@@ -23,6 +28,7 @@ module.exports = function staticserver(kill, next) {
 
   kill(function close(next) {
     server.close(next);
+    proxy.close();
   });
 
   server.listen(8080, next);

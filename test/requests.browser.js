@@ -59,7 +59,7 @@ describe('requests', function () {
   it('can handle large files with streaming', function (done) {
     this.timeout(3E4);
 
-    req = requests(unique('http://localhost:8080/unshiftio/requests/large/test/large.js'), {
+    req = requests(unique('http://localhost:8080/unshiftio/requests/master/test/large.js'), {
       streaming: true
     });
 

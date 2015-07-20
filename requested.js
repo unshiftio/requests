@@ -56,8 +56,11 @@ Requested.prototype.merge = function merge(target) {
 
     for (key in arg) {
       if (!Object.prototype.hasOwnProperty.call(arg, key)) continue;
-
-      if ('object' === this.typeof(arg[key])) {
+     
+      // unset items
+      if (this.typeof(arg[key]) === 'undefined') {
+        delete target[key];
+      } else if ('object' === this.typeof(arg[key])) {
         target[key] = this.merge('object' === this.typeof(target[key]) ? target[key] : {}, arg[key]);
       } else {
         target[key] = arg[key];

@@ -15,6 +15,7 @@
     "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/requests.test.js",
     "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/requests.test.js",
     "compile": "mkdir -p dist && browserify browser.js -o dist/requests.js --standalone Requests",
+    "pre-publish": "npm run compile",
     "start": "node test/development.js"
   },
   "repository": {
@@ -38,21 +39,22 @@
   "homepage": "https://github.com/unshiftio/requests",
   "dependencies": {
     "axo": "0.0.x",
-    "eventemitter3": "0.1.x",
+    "eventemitter3": "1.1.x",
     "extendible": "0.1.x",
     "hang": "1.0.x",
     "loads": "0.0.x",
     "xhr-send": "1.0.x"
   },
   "devDependencies": {
-    "assume": "1.2.x",
+    "argh": "0.1.x",
+    "assume": "1.3.x",
     "async-each": "0.1.x",
-    "browserify": "8.x.x",
+    "browserify": "11.x.x",
     "http-proxy": "1.11.x",
     "istanbul": "0.3.x",
-    "mocha": "2.2.x",
-    "mochify": "2.7.x",
-    "pre-commit": "1.0.x",
+    "mocha": "2.3.x",
+    "mochify": "2.13.x",
+    "pre-commit": "1.1.x",
     "setheader": "0.0.x"
   },
   "testling": {

@@ -1,8 +1,13 @@
 'use strict';
 
-var Mocha = require('mocha')
-  , mochify = require('mochify')
-  , wd = process.argv[2] === '--wd';
+var path = require('path')
+  , Mocha = require('mocha')
+  , argv = require('argh').argv
+  , mochify = require('mochify');
+
+argv.reporter = argv.reporter || 'spec';
+argv.ui = argv.ui || 'bdd';
+argv.wd = argv.wd || false;
 
 /**
  * Poor mans kill switch. Kills all active hooks.
@@ -47,6 +52,41 @@ kill.hooks = [];
   return runner;
 })([
   //
+  // Run the normal node tests.
+  //
+  function creamy(kill, next) {
+    var mocha = new Mocha();
+
+    mocha.reporter(argv.reporter);
+    mocha.ui(argv.ui);
+
+    //
+    // The next bulk of logic is required to correctly glob and lookup all the
+    // files required for testing.
+    //
+    mocha.files = [
+      './test/*.test.js'
+    ].map(function lookup(glob) {
+      return Mocha.utils.lookupFiles(glob, ['js']);
+    }).reduce(function flatten(arr, what) {
+      Array.prototype.push.apply(arr, what);
+      return arr;
+    }, []).map(function resolve(file) {
+      return path.resolve(file);
+    });
+
+    //
+    // Run the mocha test suite inside this node process with a custom callback
+    // so we don't accidentally exit the process and forget to run the test of the
+    // tests.
+    //
+    mocha.run(function ran(err) {
+      if (err) err = new Error('Something failed in the mocha test suite');
+      next(err);
+    });
+  },
+
+  //
   // Start-up a small static file server so we can download files and fixtures
   // inside our PhantomJS test.
   //
@@ -57,10 +97,10 @@ kill.hooks = [];
   //
   function phantomjs(kill, next) {
     mochify('./test/*.browser.js', {
-      reporter: 'spec',
-      cover: !wd,
-      ui: 'bdd',
-      wd: wd
+      reporter: argv.reporter,
+      cover: argv.cover,
+      wd: argv.wd,
+      ui: argv.ui
     })
     .bundle(next);
   }

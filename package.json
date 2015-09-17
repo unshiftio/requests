@@ -13,7 +13,7 @@
     "watch": "mocha --watch ./test/requests.test.js",
     "all": "npm run test && npm run node",
     "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/requests.test.js",
-    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/requests.test.js",
+    "test-node": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/requests.test.js",
     "compile": "mkdir -p dist && browserify browser.js -o dist/requests.js --standalone Requests",
     "pre-publish": "npm run compile",
     "start": "node test/development.js"

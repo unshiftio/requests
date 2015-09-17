@@ -56,6 +56,17 @@ describe('requests', function () {
     assume(requests.active[req.id]).equals(req);
   });
 
+  it('does not receive content for 204 requests', function (done) {
+    req.destroy();
+    req = requests(unique('http://localhost:8080/204'));
+
+    req.on('data', function () {
+      throw new Error('I should never be called');
+    });
+
+    req.on('end', done);
+  });
+
   it('can handle large files with streaming', function (done) {
     this.timeout(3E4);
 

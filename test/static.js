@@ -16,6 +16,11 @@ module.exports = function staticserver(kill, next) {
     setHeader(res, 'Access-Control-Allow-Origin', req.headers.origin || '*');
     setHeader(res, 'Access-Control-Allow-Credentials', 'true');
 
+    if (~req.url.indexOf('/204')) {
+      res.statusCode = 204;
+      return res.end('');
+    }
+
     if (!fs.existsSync(file)) {
       req.headers.host = '';
       setHeader(res, 'Content-Security-Policy', 'removed');

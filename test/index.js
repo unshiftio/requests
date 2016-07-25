@@ -102,10 +102,7 @@ kill.hooks = [];
       wd: argv.wd,
       ui: argv.ui
     })
-    .on('error', function(err) {
-      console.error('saw an error');
-      console.error(err);
-    })
+    .on('error', console.error)
     .bundle(next);
   }
 ]);

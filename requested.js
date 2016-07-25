@@ -21,7 +21,7 @@ function Requested(url, options) {
   this.writable = false;
 
   if (this.initialize) this.initialize(url);
-  if (!this.manual && this.open) this.open(url);
+  if (!this.manual && this.open) this.open(options);
 }
 
 Requested.extend = require('extendible');
@@ -70,7 +70,7 @@ Requested.prototype.merge = function merge(target) {
 
 /**
  * The defaults for the Requests. These values will be used if no options object
- * or matching key is provided. It can be override globally if needed but this
+ * or matching key is provided. It can be overriden globally if needed, but this
  * is not advised as it can have some potential side affects for other libraries
  * that use this module.
  *

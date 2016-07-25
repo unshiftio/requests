@@ -1,10 +1,26 @@
 'use strict';
 
-var Requested = require('./requested')
+var FetchWrapper = require('./fetch-wrapper.js')
+  , Requested = require('./requested')
   , listeners = require('loads')
   , send = require('xhr-send')
   , hang = require('hang')
   , AXO = require('axo');
+
+/**
+ * Root reference for iframes.
+ * Taken from
+ * https://github.com/visionmedia/superagent/blob/83892f35fe15676a4567a0eb51eecd096939ad36/lib/client.js#L1
+ */
+var root;
+if (typeof window !== 'undefined') { // Browser window
+  root = window;
+} else if (typeof self !== 'undefined') { // Web Worker
+  root = self;
+} else { // Other environments
+  console.warn('Using browser-only version of requests in non-browser environment');
+  root = this;
+}
 
 /**
  * RequestS(tream).
@@ -67,11 +83,12 @@ var Requests = module.exports = Requested.extend({
    * @param {Object} options Passed in defaults.
    * @api private
    */
-  open: function open() {
+  open: function open(options) {
     var what
-      , slice = true
       , requests = this
       , socket = requests.socket;
+
+    var slice = (requests.hasOwnProperty('slice')) ? requests.slice : true;
 
     requests.on('stream', function stream(data) {
       if (!slice) {
@@ -180,6 +197,21 @@ var Requests = module.exports = Requested.extend({
 });
 
 /**
+ * Create a new FetchWrapper.
+ *
+ * @returns {FetchWrapper}
+ * @type {Object} requests
+ * @api private
+ */
+Requests.FETCH = function create(requests) {
+  // TODO we need to pass the requests object to FetchWrapper,
+  // and we need to set requests.slice to false.
+  // This seems kludgy because it's not parallel with Requests.XHR and Requests.AXO.
+  requests.slice = false;
+  return new FetchWrapper(requests); 
+};
+
+/**
  * Create a new XMLHttpRequest.
  *
  * @returns {XMLHttpRequest}
@@ -229,7 +261,11 @@ Requests.active = {};
  * @type {String}
  * @public
  */
-Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
+if (typeof root.ReadableByteStream === 'function') {
+  Requests.method = 'FETCH';
+} else {
+  Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
+}
 
 /**
  * Boolean indicating
@@ -240,13 +276,13 @@ Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
 Requests.supported = !!Requests.method;
 
 /**
- * The different type of `responseType` parsers that are supported in this XHR
+ * The different types of `responseType` parsers that are supported in this XHR
  * implementation.
  *
  * @type {Object}
  * @public
  */
-Requests.type = 'XHR' === Requests.method ? (function detect() {
+Requests.type = ('XHR' === Requests.method) ? (function detect() {
   var types = 'arraybuffer,blob,document,json,text,moz-blob,moz-chunked-text,moz-chunked-arraybuffer,ms-stream'.split(',')
     , supported = {}
     , type, xhr, prop;
@@ -282,7 +318,7 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
  * @type {Boolean}
  * @private
  */
-Requests.streaming = 'XHR' === Requests.method && (
+Requests.streaming = ('XHR' === Requests.method) && (
      'multipart' in XMLHttpRequest.prototype
   || Requests.type.mozchunkedarraybuffer
   || Requests.type.mozchunkedtext
@@ -296,6 +332,7 @@ Requests.streaming = 'XHR' === Requests.method && (
 //
 // The solution is to completely clean up all active running requests.
 //
+// TODO global vs. root? do we need both?
 if (global.attachEvent) global.attachEvent('onunload', function reap() {
   for (var id in Requests.active) {
     Requests.active[id].destroy();

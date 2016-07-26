@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "argh": "0.1.x",
-    "assume": "bigpipe/assume#67b166ff09d1f4199458f56bfbecbfc66e6f700a",
+    "assume": "1.4.x",
     "async-each": "0.1.x",
     "browserify": "11.x.x",
     "http-proxy": "1.11.x",

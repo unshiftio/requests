@@ -1,10 +1,27 @@
 'use strict';
 
-var Requested = require('./requested')
+var FetchWrapper = require('./fetch-wrapper.js')
+  , Requested = require('./requested')
   , listeners = require('loads')
   , send = require('xhr-send')
+  , sameOrigin = require('same-origin')
   , hang = require('hang')
   , AXO = require('axo');
+
+/**
+ * Root reference for iframes.
+ * Taken from
+ * https://github.com/visionmedia/superagent/blob/83892f35fe15676a4567a0eb51eecd096939ad36/lib/client.js#L1
+ */
+var root;
+if (typeof window !== 'undefined') { // Browser window
+  root = window;
+} else if (typeof self !== 'undefined') { // Web Worker
+  root = self;
+} else { // Other environments
+  console.warn('Using browser-only version of requests in non-browser environment');
+  root = this;
+}
 
 /**
  * RequestS(tream).
@@ -19,7 +36,7 @@ var Requested = require('./requested')
  *
  * @constructor
  * @param {String} url The URL we want to request.
- * @param {Object} options Various of request options.
+ * @param {Object} options Various request options.
  * @api public
  */
 var Requests = module.exports = Requested.extend({
@@ -64,14 +81,16 @@ var Requests = module.exports = Requested.extend({
   /**
    * Initialize and start requesting the supplied resource.
    *
-   * @param {Object} options Passed in defaults.
+   * @param {String} url The URL we want to request.
+   * @param {Object} options Various request options.
    * @api private
    */
-  open: function open() {
+  open: function open(url, options) {
     var what
-      , slice = true
       , requests = this
       , socket = requests.socket;
+
+    var slice = (requests.hasOwnProperty('slice')) ? requests.slice : true;
 
     requests.on('stream', function stream(data) {
       if (!slice) {
@@ -94,15 +113,46 @@ var Requests = module.exports = Requested.extend({
     });
 
     if (this.timeout) {
+      // NOTE the "+" before this.timeout just ensures
+      // socket.timeout is a number.
       socket.timeout = +this.timeout;
     }
 
-    if ('cors' === this.mode.toLowerCase() && 'withCredentials' in socket) {
-      socket.withCredentials = true;
+    // Polyfilling XMLHttpRequest to accept fetch options
+    // see https://fetch.spec.whatwg.org/#cors-protocol-and-credentials and
+    // https://fetch.spec.whatwg.org/#concept-request-credentials-mode
+    //
+    // ...credentials mode, which is "omit", "same-origin", or "include".
+    // Unless stated otherwise, it is "omit".
+    //
+    // When request's mode is "navigate", its credentials mode is assumed to
+    // be "include" and fetch does not currently account for other values.
+    // If HTML changes here, this standard will need corresponding changes.
+    if ('withCredentials' in socket) {
+      var credentials = this.credentials;
+      if (credentials) {
+        credentials = credentials.toLowerCase();
+      } else if (this.mode) {
+        var mode = this.mode.toLowerCase();
+        if (mode === 'navigate') {
+          credentials = 'include';
+        }
+      }
+
+      if (credentials) {
+        if (credentials === 'include') {
+          socket.withCredentials = true;
+        } else {
+          var origin = root.location.origin || (root.location.protocol + '//' + root.location.host);
+          if (credentials === 'same-origin' && sameOrigin(origin, url)) {
+            socket.withCredentials = true;
+          }
+        }
+      }
     }
 
     //
-    // ActiveXObject will throw an `Type Mismatch` exception when setting the to
+    // ActiveXObject will throw a `Type Mismatch` exception when setting the to
     // an null-value and to be consistent with all XHR implementations we're going
     // to cast the value to a string.
     //
@@ -116,15 +166,16 @@ var Requests = module.exports = Requested.extend({
     // already eliminates duplicate headers.
     //
     for (what in this.headers) {
-      if (this.headers[what] !== undefined && this.socket.setRequestHeader) {
-        this.socket.setRequestHeader(what, this.headers[what] +'');
+      if (this.headers[what] !== undefined && socket.setRequestHeader) {
+        socket.setRequestHeader(what, this.headers[what] + '');
       }
     }
 
     //
     // Set the correct responseType method.
     //
-    if (requests.streaming) {
+    // TODO how should fetch/ReadableByteStream be handled here?
+    if (requests.streaming && (requests.method !== 'FETCH')) {
       if (!this.body || 'string' === typeof this.body) {
         if ('multipart' in socket) {
           socket.multipart = true;
@@ -142,17 +193,37 @@ var Requests = module.exports = Requested.extend({
       }
     }
 
+    // Polyfill XMLHttpRequest to use the fetch headers API
+    var fetchOrFake = {}
+    if (requests.method !== 'FETCH') {
+      // fetchOrFake is fake
+      fetchOrFake.response = {
+        headers: {
+          get: socket.getResponseHeader
+        }
+      };
+      fetchOrFake.request = socket.request || {};
+      // TODO this is just a start
+    } else {
+      // fetchOrFake is real fetch
+      fetchOrFake = socket;
+    }
+    
     listeners(socket, requests, requests.streaming);
-    requests.emit('before', socket);
 
-    send(socket, this.body, hang(function send(err) {
-      if (err) {
-        requests.emit('error', err);
-        requests.emit('end', err);
-      }
+    requests.emit('before', fetchOrFake);
 
-      requests.emit('send');
-    }));
+    if (requests.method !== 'FETCH') {
+      send(socket, this.body, hang(function send(err) {
+        if (err) {
+          requests.emit('error', err);
+          requests.emit('end', err);
+        }
+
+        // NOTE the send event for fetch is in fetch-wrapper.js
+        requests.emit('send');
+      }));
+    }
   },
 
   /**
@@ -178,6 +249,20 @@ var Requests = module.exports = Requested.extend({
     return true;
   }
 });
+
+/**
+ * Create a new FetchWrapper.
+ *
+ * @returns {FetchWrapper}
+ * @type {Object} requests
+ * @api private
+ */
+Requests.FETCH = function create(requests) {
+  // TODO we need to pass the requests object to FetchWrapper,
+  // This seems kludgy because it's not parallel with Requests.XHR and Requests.AXO.
+  requests.slice = false;
+  return new FetchWrapper(requests); 
+};
 
 /**
  * Create a new XMLHttpRequest.
@@ -229,7 +314,11 @@ Requests.active = {};
  * @type {String}
  * @public
  */
-Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
+if (typeof root.ReadableByteStream === 'function') {
+  Requests.method = 'FETCH';
+} else {
+  Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
+}
 
 /**
  * Boolean indicating
@@ -240,13 +329,13 @@ Requests.method = !!Requests.XHR() ? 'XHR' : (!!Requests.AXO() ? 'AXO' : '');
 Requests.supported = !!Requests.method;
 
 /**
- * The different type of `responseType` parsers that are supported in this XHR
+ * The different types of `responseType` parsers that are supported in this XHR
  * implementation.
  *
  * @type {Object}
  * @public
  */
-Requests.type = 'XHR' === Requests.method ? (function detect() {
+Requests.type = ('XHR' === Requests.method) ? (function detect() {
   var types = 'arraybuffer,blob,document,json,text,moz-blob,moz-chunked-text,moz-chunked-arraybuffer,ms-stream'.split(',')
     , supported = {}
     , type, xhr, prop;
@@ -282,13 +371,16 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
  * @type {Boolean}
  * @private
  */
-Requests.streaming = 'XHR' === Requests.method && (
-     'multipart' in XMLHttpRequest.prototype
-  || Requests.type.mozchunkedarraybuffer
-  || Requests.type.mozchunkedtext
-  || Requests.type.msstream
-  || Requests.type.mozblob
-);
+Requests.streaming = (Requests.method === 'FETCH') ||
+  (
+    (Requests.method === 'XHR') && (
+      'multipart' in XMLHttpRequest.prototype ||
+      Requests.type.mozchunkedarraybuffer ||
+      Requests.type.mozchunkedtext ||
+      Requests.type.msstream ||
+      Requests.type.mozblob
+    )
+  );
 
 //
 // IE has a bug which causes IE10 to freeze when close WebPage during an XHR
@@ -296,6 +388,7 @@ Requests.streaming = 'XHR' === Requests.method && (
 //
 // The solution is to completely clean up all active running requests.
 //
+// TODO global vs. root? do we need both?
 if (global.attachEvent) global.attachEvent('onunload', function reap() {
   for (var id in Requests.active) {
     Requests.active[id].destroy();

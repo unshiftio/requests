@@ -43,6 +43,7 @@
     "extendible": "0.1.x",
     "hang": "1.0.x",
     "loads": "0.0.x",
+    "same-origin": "^0.1.1",
     "xhr-send": "1.0.x"
   },
   "devDependencies": {

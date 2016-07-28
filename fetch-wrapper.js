@@ -1,5 +1,6 @@
 // From https://github.com/jonnyreeves/chunked-request/blob/4dd6b7568e79a920f6cab3cd4d91d1e8d30b0798/src/impl/fetch.js
 
+//var Requested = require('./requested');
 function FetchWrapper(requests) {
   var fetchWrapper = this;
   fetchWrapper.requests = requests;
@@ -22,7 +23,9 @@ function FetchWrapper(requests) {
 
 FetchWrapper.prototype.onError = function(err) {
   var fetchWrapper = this;
-  fetchWrapper.requests.emit('error', err);
+  console.error(err.message);
+  console.error(err.stack);
+  //fetchWrapper.requests.emit('error', err);
 }
 
 FetchWrapper.prototype.pump = function(reader, res) {
@@ -36,6 +39,8 @@ FetchWrapper.prototype.pump = function(reader, res) {
       }
       fetchWrapper.requests.emit('stream', fetchWrapper.decoder.decode(result.value));
       return fetchWrapper.pump(reader, res);
+    }, function(err) {
+      fetchWrapper.requests.emit('error', err);
     });
 }
 
@@ -44,6 +49,8 @@ FetchWrapper.prototype.open = function(method, url, streaming) {
   var fetchWrapper = this;
   fetch(url, fetchWrapper.fetchOptions)
     .then(function(res) {
+      fetchWrapper.response = res;
+      fetchWrapper.requests.emit('send', fetchWrapper);
       return fetchWrapper.pump(res.body.getReader(), res)
     })
     .catch(fetchWrapper.onError);

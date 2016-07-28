@@ -21,7 +21,10 @@ function Requested(url, options) {
   this.writable = false;
 
   if (this.initialize) this.initialize(url);
-  if (!this.manual && this.open) this.open(options);
+  // TODO AR changed what is passed in to this.open().
+  // But what was happening did not match the
+  // documentation for this.open anyway.
+  if (!this.manual && this.open) this.open(url, options);
 }
 
 Requested.extend = require('extendible');
@@ -81,7 +84,8 @@ Requested.defaults = {
   streaming: false,
   manual: false,
   method: 'GET',
-  mode: 'cors',
+  // A request has an associated mode, which is "same-origin", "cors", "no-cors", "navigate",
+  // or "websocket". Unless stated otherwise, it is "no-cors".
   headers: {
     //
     // We're forcing text/plain mode by default to ensure that regular

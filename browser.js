@@ -194,16 +194,24 @@ var Requests = module.exports = Requested.extend({
     }
 
     // Polyfill XMLHttpRequest to use the fetch headers API
-    if (!socket.response || !socket.response.headers) {
-      socket.response = socket.response || {};
-      var responseHeaders = {};
-      responseHeaders.get = socket.getResponseHeader;
-      socket.response.headers = responseHeaders;
+    var fetchOrFake = {}
+    if (requests.method !== 'FETCH') {
+      // fetchOrFake is fake
+      fetchOrFake.response = {
+        headers: {
+          get: socket.getResponseHeader
+        }
+      };
+      fetchOrFake.request = socket.request || {};
+      // TODO this is just a start
+    } else {
+      // fetchOrFake is real fetch
+      fetchOrFake = socket;
     }
     
     listeners(socket, requests, requests.streaming);
 
-    requests.emit('before', socket);
+    requests.emit('before', fetchOrFake);
 
     if (requests.method !== 'FETCH') {
       send(socket, this.body, hang(function send(err) {

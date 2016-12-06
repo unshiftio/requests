@@ -50,7 +50,7 @@
     "assume": "~1.4.1",
     "async-each": "~1.0.1",
     "browserify": "^13.1.1",
-    "http-proxy": "~1.15.2",
+    "http-proxy": "~1.16.2",
     "istanbul": "~0.4.5",
     "mocha": "~3.2.0",
     "mochify": "~2.18.1",

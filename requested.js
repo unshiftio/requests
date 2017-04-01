@@ -3,6 +3,8 @@
 var EventEmitter = require('eventemitter3');
 
 function Requested(url, options) {
+  EventEmitter.call(this);
+
   //
   // All properties/options that should be introduced on the prototype.
   //

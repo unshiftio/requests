@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "argh": "0.1.x",
-    "assume": "~1.4.1",
+    "assume": "~1.5.0",
     "async-each": "~1.0.1",
     "browserify": "^14.0.0",
     "http-proxy": "~1.16.2",

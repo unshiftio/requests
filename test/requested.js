@@ -52,5 +52,16 @@ describe('Requested', function () {
       assume(x.deep.nested).equals('object');
       assume(x.deep.another).equals('key');
     });
+    
+    it('can unset a key', function () {
+      var x = { foo: 'foo' }
+        , y = { foo: undefined }
+        , z = { baz: 'fun' }
+        , x = r.merge(x, y, z);
+
+      assume(x.foo).is.undefined();
+      assume(x.baz).equals('fun');
+
+    });
   });
 });

@@ -1,9 +1,10 @@
 'use strict';
 
-var requests = require('../');
 var path = require('path');
 var fs = require('fs');
 var assume = require('assume');
+var requests = require('../');
+var staticserver = require('./static');
 
 /**
  * Make a URL unique so we can bust the browser cache which could affect
@@ -17,7 +18,22 @@ function unique(url) {
 }
 
 describe('requests', function () {
+  var closeServer;
   var req;
+
+  before(function (done) {
+    //
+    // Start-up a small static file server so we can download files and fixtures
+    // inside our tests.
+    //
+    staticserver(function (close) {
+      closeServer = close;
+    }, done);
+  });
+
+  after(function (done) {
+    closeServer(done);
+  });
 
   beforeEach(function () {
     req = requests(unique('http://localhost:8080/index.html'), { manual: true });

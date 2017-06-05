@@ -88,7 +88,7 @@ kill.hooks = [];
 
   //
   // Start-up a small static file server so we can download files and fixtures
-  // inside our tests.
+  // inside our PhantomJS test.
   //
   require('./static'),
 

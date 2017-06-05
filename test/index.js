@@ -52,6 +52,12 @@ kill.hooks = [];
   return runner;
 })([
   //
+  // Start-up a small static file server so we can download files and fixtures
+  // inside our tests.
+  //
+  require('./static'),
+
+  //
   // Run the normal node tests.
   //
   function creamy(kill, next) {
@@ -85,12 +91,6 @@ kill.hooks = [];
       next(err);
     });
   },
-
-  //
-  // Start-up a small static file server so we can download files and fixtures
-  // inside our PhantomJS test.
-  //
-  require('./static'),
 
   //
   // Run the PhantomJS tests now that we have a small static server setup.

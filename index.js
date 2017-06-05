@@ -1,15 +1,24 @@
 'use strict';
 
-var Requested = require('./requested')
-  , https = require('https')
-  , http = require('http');
-
-module.exports = Requested.extend({
-  initialize: function initialize() {
-
-  },
-
-  open: function open() {
-
+module.exports = (function () {
+  if ('XMLHttpRequest' in global) {
+    return require('./browser');
   }
-});
+
+  var XMLHttpRequest = global.XMLHttpRequest = require('node-http-xhr');
+  var Requests = require('./browser');
+  delete global.XMLHttpRequest;
+
+  /**
+   * Create a new XMLHttpRequest.
+   *
+   * @returns {XMLHttpRequest} XHR.
+   * @api private
+   */
+  Requests.XHR = function create() {
+    return new XMLHttpRequest();
+  };
+
+  return Requests;
+}());
+

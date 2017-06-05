@@ -255,7 +255,7 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
     type = types.pop();
 
     xhr = Requests.XHR();
-    xhr.open('get', '/', true);
+    xhr.open('get', 'http://localhost/', true);
     prop = type.replace(/-/g, '');
 
     //

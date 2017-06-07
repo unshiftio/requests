@@ -8,7 +8,7 @@ describe('requests', function () {
   require('./requested');
 
   var Requested = require('../requested')
-    , requests = require('../browser')
+    , requests = require('..')
     , assume = require('assume')
     , req;
 

@@ -3,7 +3,6 @@
   "version": "0.1.7",
   "description": "An streaming XHR abstraction that works in browsers and node.js",
   "main": "index.js",
-  "browser": "index.js",
   "scripts": {
     "100%": "istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
     "wd": "node test/index.js --wd",

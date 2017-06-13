@@ -42,7 +42,7 @@
     "extendible": "0.1.x",
     "hang": "1.0.x",
     "loads": "0.0.x",
-    "node-http-xhr": "~1.2.1",
+    "node-http-xhr": "~1.3.0",
     "xhr-send": "1.0.x"
   },
   "devDependencies": {

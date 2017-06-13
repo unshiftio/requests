@@ -254,7 +254,7 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
 
   while (types.length) {
     type = types.pop();
-
+    prop = type.replace(/-/g, '');
     xhr = Requests.XHR();
 
     //
@@ -271,10 +271,14 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
     } catch (e) {
       // In JSDOM the above will fail because it only supports full URLs, so
       // try opening a request to localhost.
-      xhr.open('get', 'http://localhost/', true);
+      try {
+        xhr.open('get', 'http://localhost/', true);
+      } catch (err) {
+        supported[prop] = false;
+        continue;
+      }
     }
 
-    prop = type.replace(/-/g, '');
     try {
       xhr.responseType = type;
       supported[prop] = 'response' in xhr && xhr.responseType === type;

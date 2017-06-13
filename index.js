@@ -256,14 +256,25 @@ Requests.type = 'XHR' === Requests.method ? (function detect() {
     type = types.pop();
 
     xhr = Requests.XHR();
-    xhr.open('get', 'http://localhost/', true);
-    prop = type.replace(/-/g, '');
 
     //
-    // We can only set the `responseType` after we've opened the connection or
-    // FireFox will throw an error and according to the spec only async requests
-    // can use this, which is fine as we force that by default.
+    // Older versions of Firefox/IE11 will throw an error because previous
+    // version of the specification do not support setting `responseType`
+    // before the request is opened. Thus, we open the request here.
     //
+    // Note that `open()` does not actually open any connections; it just
+    // initializes the request object.
+    //
+    try {
+      // Try opening a request to current page.
+      xhr.open('get', '/', true);
+    } catch (e) {
+      // In JSDOM the above will fail because it only supports full URLs, so
+      // try opening a request to localhost.
+      xhr.open('get', 'http://localhost/', true);
+    }
+
+    prop = type.replace(/-/g, '');
     try {
       xhr.responseType = type;
       supported[prop] = 'response' in xhr && xhr.responseType === type;

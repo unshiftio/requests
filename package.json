@@ -52,7 +52,7 @@
     "browserify": "^16.0.0",
     "http-proxy": "~1.16.2",
     "istanbul": "~0.4.5",
-    "mocha": "~3.5.0",
+    "mocha": "~5.0.1",
     "mochify": "~2.18.1",
     "pre-commit": "~1.2.0",
     "setheader": "0.0.x"

@@ -38,7 +38,7 @@
   "homepage": "https://github.com/unshiftio/requests",
   "dependencies": {
     "axo": "0.0.x",
-    "eventemitter3": "~3.1.0",
+    "eventemitter3": "~4.0.0",
     "extendible": "0.1.x",
     "hang": "1.0.x",
     "loads": "0.0.x",
